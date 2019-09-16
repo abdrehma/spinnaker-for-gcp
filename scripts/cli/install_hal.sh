@@ -10,7 +10,7 @@ if [ -f "$HALYARD_DAEMON_PID_FILE" ]; then
     HALYARD_DAEMON_PID=$(cat $HALYARD_DAEMON_PID_FILE)
 
     set +e
-    ps $HALYARD_DAEMON_PID &>/dev/null
+    ps $HALYARD_DAEMON_PID &> /dev/null
     exit_code=$?
     set -e
 
@@ -24,24 +24,24 @@ pkill -f '/opt/halyard/lib/halyard-web' || true
 pkill -f "$HOME/hal/halyard/lib/halyard-web" || true
 
 curl -O https://raw.githubusercontent.com/spinnaker/halyard/master/install/debian/InstallHalyard.sh
-bash InstallHalyard.sh --user $USER -y $@
+sudo bash InstallHalyard.sh --user $USER -y $@
 
 retVal=$?
 if [ $retVal == 13 ]; then
-    exit 13
+  exit 13
 fi
 
 mkdir -p ~/hal/log
-mv /etc/bash_completion.d/hal ~/hal/hal_completion
-mv /usr/local/bin/hal ~/hal
-mv /usr/local/bin/update-halyard ~/hal
-rm -rf ~/hal/halyard/ && mv /opt/halyard ~/hal
-rm -rf ~/hal/spinnaker/ && mv /opt/spinnaker ~/hal
+sudo mv /etc/bash_completion.d/hal ~/hal/hal_completion
+sudo mv /usr/local/bin/hal ~/hal
+sudo mv /usr/local/bin/update-halyard ~/hal
+sudo rm -rf ~/hal/halyard/ && sudo mv /opt/halyard ~/hal
+sudo rm -rf ~/hal/spinnaker/ && sudo mv /opt/spinnaker ~/hal
 
 sed -i 's:^. /etc/bash_completion.d/hal:# . /etc/bash_completion.d/hal\n. ~/hal/hal_completion\nalias hal=~/hal/hal:' ~/.bashrc
 sed -i s:/opt/halyard:~/hal/halyard:g ~/hal/hal
 sed -i s:/var/log/spinnaker/halyard:~/hal/log:g ~/hal/hal
-sed -i s:/opt/spinnaker:~/hal/spinnaker:g ~/hal/halyard/bin/halyard
+sudo sed -i s:/opt/spinnaker:~/hal/spinnaker:g ~/hal/halyard/bin/halyard
 sed -i 's:rm -rf /opt/halyard:rm -rf ~/hal/halyard:g' ~/hal/update-halyard
 sed -i "s:^  HAL_USER=.*$:  HAL_USER=$(cat ~/hal/spinnaker/config/halyard-user):g" ~/hal/update-halyard
 sed -i s:/etc/bash_completion.d/hal:~/hal/hal_completion: ~/hal/update-halyard
