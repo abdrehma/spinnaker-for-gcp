@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 bold() {
-  echo ". $(tput bold)" "$*" "$(tput sgr0)";
+  echo ". $(tput bold)" "$*" "$(tput sgr0)"
 }
 
 if [ ! -f "$HOME/spinnaker-for-gcp/scripts/install/properties" ]; then
   bold "No properties file was found. Not updating GKE Application details view."
-  git checkout -- ~/spinnaker-for-gcp/scripts/manage/landing_page_expanded.md
+  # git checkout -- ~/spinnaker-for-gcp/scripts/manage/landing_page_expanded.md
   exit 0
 fi
 
@@ -25,8 +25,8 @@ fi
 kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
 cat ~/spinnaker-for-gcp/templates/spinnaker_application_manifest_top.yaml \
   ~/spinnaker-for-gcp/templates/$APP_MANIFEST_MIDDLE \
-  ~/spinnaker-for-gcp/templates/spinnaker_application_manifest_bottom.yaml \
-  | envsubst | kubectl apply -f -
+  ~/spinnaker-for-gcp/templates/spinnaker_application_manifest_bottom.yaml |
+  envsubst | kubectl apply -f -
 
 bold "Labeling resources as components of application $DEPLOYMENT_NAME..."
 kubectl label service --overwrite -n spinnaker spin-clouddriver app.kubernetes.io/name=$DEPLOYMENT_NAME -o name

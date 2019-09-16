@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 bold() {
-  echo ". $(tput bold)" "$*" "$(tput sgr0)";
+  echo ". $(tput bold)" "$*" "$(tput sgr0)"
 }
 
 err() {
-  echo "$*" >&2;
+  echo "$*" >&2
 }
 
 ~/spinnaker-for-gcp/scripts/manage/check_duplicate_dirs.sh || exit 1
-~/spinnaker-for-gcp/scripts/manage/check_git_config.sh || exit 1
+# ~/spinnaker-for-gcp/scripts/manage/check_git_config.sh || exit 1
 
 PROPERTIES_FILE="$HOME/spinnaker-for-gcp/scripts/install/properties"
 
@@ -18,7 +18,7 @@ source "$PROPERTIES_FILE"
 ~/spinnaker-for-gcp/scripts/manage/check_project_mismatch.sh
 
 REQUIRED_APIS="cloudbuild.googleapis.com cloudfunctions.googleapis.com container.googleapis.com endpoints.googleapis.com iap.googleapis.com monitoring.googleapis.com redis.googleapis.com sourcerepo.googleapis.com"
-NUM_REQUIRED_APIS=$(wc -w <<< "$REQUIRED_APIS")
+NUM_REQUIRED_APIS=$(wc -w <<<"$REQUIRED_APIS")
 NUM_ENABLED_APIS=$(gcloud services list --project $PROJECT_ID \
   --filter="config.name:($REQUIRED_APIS)" \
   --format="value(config.name)" | wc -l)
@@ -38,7 +38,7 @@ CLUSTER_EXISTS=$(check_for_existing_cluster)
 
 if [ -n "$CLUSTER_EXISTS" ]; then
   bold "Retrieving credentials for GKE cluster $GKE_CLUSTER..."
-  gcloud container clusters get-credentials $GKE_CLUSTER --zone $ZONE --project $PROJECT_ID
+  gcloud container clusters get-credentials $GKE_CLUSTER --region $REGION --project $PROJECT_ID
 
   bold "Checking for Spinnaker application in cluster $GKE_CLUSTER..."
   SPINNAKER_APPLICATION_LIST_JSON=$(kubectl get applications -n spinnaker -l app.kubernetes.io/name=spinnaker --output json)
@@ -73,8 +73,8 @@ if [ -z "$NETWORK_SUBNET_MODE" ]; then
   exit 1
 elif [ "$NETWORK_SUBNET_MODE" = "LEGACY" ]; then
   bold "Network $NETWORK is a legacy network. This installation requires a" \
-       "non-legacy network. Please specify a non-legacy network in" \
-       "$PROPERTIES_FILE and re-run this script."
+    "non-legacy network. Please specify a non-legacy network in" \
+    "$PROPERTIES_FILE and re-run this script."
   exit 1
 fi
 
@@ -83,9 +83,9 @@ SUBNET_CHECK=$(gcloud compute networks subnets list --network=$NETWORK --filter 
 
 if [ -z "$SUBNET_CHECK" ]; then
   bold "Subnet $SUBNET was not found in network $NETWORK" \
-       "in project $PROJECT_ID. Please specify an existing subnet in" \
-       "$PROPERTIES_FILE and re-run this script. You can verify" \
-       "what subnetworks exist in this network by running:"
+    "in project $PROJECT_ID. Please specify an existing subnet in" \
+    "$PROPERTIES_FILE and re-run this script. You can verify" \
+    "what subnetworks exist in this network by running:"
   bold "  gcloud compute networks subnets list --project $PROJECT_ID --network=$NETWORK --filter \"region: ($REGION)\""
   exit 1
 fi
@@ -165,7 +165,7 @@ if [ -z "$CLUSTER_EXISTS" ]; then
   # TODO: Move some of these config settings to properties file.
   # TODO: Should this be regional instead?
   gcloud beta container clusters create $GKE_CLUSTER --project $PROJECT_ID \
-    --zone $ZONE --network $NETWORK --username "admin" --subnetwork $SUBNET --cluster-version $GKE_CLUSTER_VERSION \
+    --region $REGION --network $NETWORK --username "admin" --subnetwork $SUBNET --cluster-version $GKE_CLUSTER_VERSION \
     --machine-type $GKE_MACHINE_TYPE --image-type "COS" --disk-type $GKE_DISK_TYPE \
     --disk-size $GKE_DISK_SIZE --service-account $SA_EMAIL --num-nodes $GKE_NUM_NODES \
     --enable-stackdriver-kubernetes --enable-autoupgrade --enable-autorepair \
@@ -173,11 +173,10 @@ if [ -z "$CLUSTER_EXISTS" ]; then
 
   # If the cluster already exists, we already retrieved credentials way up at the top of the script.
   bold "Retrieving credentials for GKE cluster $GKE_CLUSTER..."
-  gcloud container clusters get-credentials $GKE_CLUSTER --zone $ZONE --project $PROJECT_ID
+  gcloud container clusters get-credentials $GKE_CLUSTER --region $REGION --project $PROJECT_ID
 else
   bold "Using existing GKE cluster $GKE_CLUSTER..."
 fi
-
 
 GCR_PUBSUB_TOPIC_NAME=projects/$PROJECT_ID/topics/gcr
 EXISTING_GCR_PUBSUB_TOPIC_NAME=$(gcloud pubsub topics list --project $PROJECT_ID \
@@ -250,12 +249,12 @@ fi
 
 bold "Provisioning Spinnaker resources..."
 
-envsubst < ~/spinnaker-for-gcp/scripts/install/quick-install.yml | kubectl apply -f -
+envsubst <~/spinnaker-for-gcp/scripts/install/quick-install.yml | kubectl apply -f -
 
 job_ready() {
   printf "Waiting on job $1 to complete"
   while [[ "$(kubectl get job $1 -n halyard -o \
-            jsonpath="{.status.succeeded}")" != "1" ]]; do
+    jsonpath="{.status.succeeded}")" != "1" ]]; do
     printf "."
     sleep 5
   done
@@ -264,7 +263,7 @@ job_ready() {
 
 job_ready hal-deploy-apply
 
-# Sourced to import $IP_ADDR. 
+# Sourced to import $IP_ADDR.
 # Used at the end of setup to check if installation is exposed via a secured endpoint.
 source ~/spinnaker-for-gcp/scripts/manage/update_landing_page.sh
 ~/spinnaker-for-gcp/scripts/manage/deploy_application_manifest.sh
@@ -286,15 +285,15 @@ EXISTING_CLOUD_FUNCTION=$(gcloud functions list --project $PROJECT_ID \
 if [ -z "$EXISTING_CLOUD_FUNCTION" ]; then
   bold "Deploying audit log cloud function $CLOUD_FUNCTION_NAME..."
 
-  cat ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/config_json.template | envsubst > ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/config.json
-  cat ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/index_js.template | envsubst > ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/index.js
+  cat ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/config_json.template | envsubst >~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/config.json
+  cat ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/index_js.template | envsubst >~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog/index.js
   gcloud functions deploy $CLOUD_FUNCTION_NAME --source ~/spinnaker-for-gcp/scripts/install/spinnakerAuditLog \
     --trigger-http --memory 2048MB --runtime nodejs8 --project $PROJECT_ID
 else
   bold "Using existing audit log cloud function $CLOUD_FUNCTION_NAME..."
 fi
 
-if [ "$USE_CLOUD_SHELL_HAL_CONFIG" = true ] ; then
+if [ "$USE_CLOUD_SHELL_HAL_CONFIG" = true ]; then
   ~/spinnaker-for-gcp/scripts/manage/push_and_apply.sh
 else
   # We want the local hal config to match what was deployed.
@@ -306,9 +305,8 @@ fi
 deploy_ready() {
   printf "Waiting on $2 to come online"
   while [[ "$(kubectl get deploy $1 -n spinnaker -o \
-            jsonpath="{.status.readyReplicas}")" != \
-           "$(kubectl get deploy $1 -n spinnaker -o \
-            jsonpath="{.status.replicas}")" ]]; do
+    jsonpath="{.status.readyReplicas}")" != "$(kubectl get deploy $1 -n spinnaker -o \
+      jsonpath="{.status.replicas}")" ]]; do
     printf "."
     sleep 5
   done
@@ -328,7 +326,7 @@ deploy_ready spin-deck "UI server"
 ~/spinnaker-for-gcp/scripts/manage/push_config.sh
 
 # If restoring a secured endpoint, leave the user on the documentation for iap configuration.
-if [ "$USE_CLOUD_SHELL_HAL_CONFIG" = true -a -n "$IP_ADDR" ] ; then
+if [ "$USE_CLOUD_SHELL_HAL_CONFIG" = true -a -n "$IP_ADDR" ]; then
   ~/spinnaker-for-gcp/scripts/expose/launch_configure_iap.sh
 fi
 

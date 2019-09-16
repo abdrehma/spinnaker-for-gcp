@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 bold() {
-  echo ". $(tput bold)" "$*" "$(tput sgr0)";
+  echo ". $(tput bold)" "$*" "$(tput sgr0)"
 }
 
 ~/spinnaker-for-gcp/scripts/manage/check_duplicate_dirs.sh || exit 1
-~/spinnaker-for-gcp/scripts/manage/check_git_config.sh || exit 1
+# ~/spinnaker-for-gcp/scripts/manage/check_git_config.sh || exit 1
 
 source ~/spinnaker-for-gcp/scripts/install/properties
 
@@ -51,26 +51,28 @@ if [ -z "$CLUSTER_EXISTS" ]; then
   exit 1
 fi
 
-if [ -z "$CONFIG_CSR_REPO" ]; then
-  bold "CONFIG_CSR_REPO was not set. Please run the $HOME/spinnaker-for-gcp/scripts/manage/update_management_environment.sh" \
-       "command to ensure you have all the necessary properties declared."
-  exit 1
-fi
+# if [ -z "$CONFIG_CSR_REPO" ]; then
+#   bold "CONFIG_CSR_REPO was not set. Please run the $HOME/spinnaker-for-gcp/scripts/manage/update_management_environment.sh" \
+#        "command to ensure you have all the necessary properties declared."
+#   exit 1
+# fi
 
 HALYARD_POD=spin-halyard-0
 
 TEMP_DIR=$(mktemp -d -t halyard.XXXXX)
 pushd $TEMP_DIR
 
-EXISTING_CSR_REPO=$(gcloud source repos list --format="value(name)" --filter="name=projects/$PROJECT_ID/repos/$CONFIG_CSR_REPO" --project=$PROJECT_ID)
+# EXISTING_CSR_REPO=$(gcloud source repos list --format="value(name)" --filter="name=projects/$PROJECT_ID/repos/$CONFIG_CSR_REPO" --project=$PROJECT_ID)
 
-if [ -z "$EXISTING_CSR_REPO" ]; then
-  bold "Creating Cloud Source Repository $CONFIG_CSR_REPO..."
+# if [ -z "$EXISTING_CSR_REPO" ]; then
+#   bold "Creating Cloud Source Repository $CONFIG_CSR_REPO..."
 
-  gcloud source repos create $CONFIG_CSR_REPO --project=$PROJECT_ID
-fi
+#   gcloud source repos create $CONFIG_CSR_REPO --project=$PROJECT_ID
+# fi
 
-gcloud source repos clone $CONFIG_CSR_REPO --project=$PROJECT_ID
+# gcloud source repos clone $CONFIG_CSR_REPO --project=$PROJECT_ID
+
+mkdir -p $CONFIG_CSR_REPO
 cd $CONFIG_CSR_REPO
 
 bold "Backing up $HOME/.hal..."
@@ -82,7 +84,7 @@ mkdir .hal
 DIRS=(credentials profiles service-settings)
 
 for p in "${DIRS[@]}"; do
-  for f in $(find ~/.hal/*/$p -prune 2> /dev/null); do
+  for f in $(find ~/.hal/*/$p -prune 2>/dev/null); do
     SUB_PATH=$(echo $f | rev | cut -d '/' -f 1,2 | rev)
     mkdir -p .hal/$SUB_PATH
     cp -RT ~/.hal/$SUB_PATH .hal/$SUB_PATH
@@ -93,7 +95,7 @@ cp ~/.hal/config .hal
 
 REWRITABLE_KEYS=(kubeconfigFile jsonPath jsonKey passwordFile path templatePath)
 for k in "${REWRITABLE_KEYS[@]}"; do
-  grep $k .hal/config &> /dev/null
+  grep $k .hal/config &>/dev/null
   FOUND_TOKEN=$?
 
   if [ "$FOUND_TOKEN" == "0" ]; then
@@ -155,9 +157,11 @@ bold "Creating Kubernetes secret spinnaker-deployment containing Spinnaker deplo
 kubectl create secret generic spinnaker-deployment -n halyard \
   --from-file deployment_config_files
 
-git add .
-git commit -m 'Automated backup.'
-git push
+gsutil -m cp -r ${PWD} ${CONFIG_BUCKET_BACKUP_URI}
+
+# git add .
+# git commit -m 'Automated backup.'
+# git push
 
 popd
 rm -rf $TEMP_DIR
