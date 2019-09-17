@@ -237,31 +237,36 @@ else
   bold "Using existing pubsub topic $EXISTING_NOTIFICATION_PUBSUB_TOPIC_NAME for notifications..."
 fi
 
-EXISTING_HAL_DEPLOY_APPLY_JOB_NAME=$(kubectl get job -n halyard \
-  --field-selector metadata.name=="hal-deploy-apply" \
-  -o json | jq -r .items[0].metadata.name)
+# Skip deploying a hal deploy job if hal-spin is already functioning
+kubectl get pods -n halyard spin-halyard-0 | grep "1/1"
+if [ $? != "0" ]; then
 
-if [ $EXISTING_HAL_DEPLOY_APPLY_JOB_NAME != 'null' ]; then
-  bold "Deleting earlier job $EXISTING_HAL_DEPLOY_APPLY_JOB_NAME..."
+  EXISTING_HAL_DEPLOY_APPLY_JOB_NAME=$(kubectl get job -n halyard \
+    --field-selector metadata.name=="hal-deploy-apply" \
+    -o json | jq -r .items[0].metadata.name)
 
-  kubectl delete job hal-deploy-apply -n halyard
+  if [ $EXISTING_HAL_DEPLOY_APPLY_JOB_NAME != 'null' ]; then
+    bold "Deleting earlier job $EXISTING_HAL_DEPLOY_APPLY_JOB_NAME..."
+
+    kubectl delete job hal-deploy-apply -n halyard
+  fi
+
+  bold "Provisioning Spinnaker resources..."
+
+  envsubst <~/spinnaker-for-gcp/scripts/install/quick-install.yml | kubectl apply -f -
+
+  job_ready() {
+    printf "Waiting on job $1 to complete"
+    while [[ "$(kubectl get job $1 -n halyard -o \
+      jsonpath="{.status.succeeded}")" != "1" ]]; do
+      printf "."
+      sleep 5
+    done
+    echo ""
+  }
+
+  job_ready hal-deploy-apply
 fi
-
-bold "Provisioning Spinnaker resources..."
-
-envsubst <~/spinnaker-for-gcp/scripts/install/quick-install.yml | kubectl apply -f -
-
-job_ready() {
-  printf "Waiting on job $1 to complete"
-  while [[ "$(kubectl get job $1 -n halyard -o \
-    jsonpath="{.status.succeeded}")" != "1" ]]; do
-    printf "."
-    sleep 5
-  done
-  echo ""
-}
-
-job_ready hal-deploy-apply
 
 # Sourced to import $IP_ADDR.
 # Used at the end of setup to check if installation is exposed via a secured endpoint.
@@ -331,7 +336,7 @@ hal --ready
 if [ "$USE_CLOUD_SHELL_HAL_CONFIG" = true -a -n "$IP_ADDR" ]; then
   ~/spinnaker-for-gcp/scripts/expose/launch_configure_iap.sh
 else
-  cat ~/spinnaker-for-gcp/scripts/expose/ | envsubst
+  cat ~/spinnaker-for-gcp/scripts/expose/configure_iap.md | envsubst
   echo "Instructions have been printed above - executing IAP install script:"
   ~/spinnaker-for-gcp/scripts/expose/configure_iap.sh
 
