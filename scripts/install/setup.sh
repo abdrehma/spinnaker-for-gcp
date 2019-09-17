@@ -320,6 +320,7 @@ deploy_ready spin-kayenta "canary analysis engine"
 deploy_ready spin-deck "UI server"
 
 # Done in docker image now
+hal --ready
 # ~/spinnaker-for-gcp/scripts/cli/install_hal.sh --version $HALYARD_VERSION
 # ~/spinnaker-for-gcp/scripts/cli/install_spin.sh
 
