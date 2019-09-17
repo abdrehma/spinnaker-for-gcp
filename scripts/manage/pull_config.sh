@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 bold() {
-  echo ". $(tput bold)" "$*" "$(tput sgr0)";
+  echo ". $(tput bold)" "$*" "$(tput sgr0)"
 }
 
 ~/spinnaker-for-gcp/scripts/manage/check_duplicate_dirs.sh || exit 1
@@ -27,7 +27,8 @@ rm -rf ~/.hal
 # Copy persistent config into place.
 bold "Copying halyard/$HALYARD_POD:/home/spinnaker/.hal into $HOME/.hal..."
 
-kubectl cp halyard/$HALYARD_POD:/home/spinnaker/.hal .hal
+gsutil cp -r ${CONFIG_BUCKET_BACKUP_URI}/hal .
+# kubectl cp halyard/$HALYARD_POD:/home/spinnaker/.hal .hal
 
 source ~/spinnaker-for-gcp/scripts/manage/restore_config_utils.sh
 rewrite_hal_key_paths
@@ -48,7 +49,7 @@ if [ $EXISTING_DEPLOYMENT_SECRET_NAME != 'null' ]; then
     DATA_ITEM_VALUE=$(echo $DEPLOYMENT_SECRET_DATA | jq -r ".data.\"$1\"")
 
     if [ $DATA_ITEM_VALUE != 'null' ]; then
-      echo $DATA_ITEM_VALUE | base64 -d > $2
+      echo $DATA_ITEM_VALUE | base64 -d >$2
     fi
   }
 

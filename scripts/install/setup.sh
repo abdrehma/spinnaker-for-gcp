@@ -319,8 +319,9 @@ deploy_ready spin-orca "orchestration engine"
 deploy_ready spin-kayenta "canary analysis engine"
 deploy_ready spin-deck "UI server"
 
-~/spinnaker-for-gcp/scripts/cli/install_hal.sh --version $HALYARD_VERSION
-~/spinnaker-for-gcp/scripts/cli/install_spin.sh
+# Done in docker image now
+# ~/spinnaker-for-gcp/scripts/cli/install_hal.sh --version $HALYARD_VERSION
+# ~/spinnaker-for-gcp/scripts/cli/install_spin.sh
 
 # We want a backup containing the newly-created ~/.spin/* files as well.
 ~/spinnaker-for-gcp/scripts/manage/push_config.sh
@@ -328,6 +329,11 @@ deploy_ready spin-deck "UI server"
 # If restoring a secured endpoint, leave the user on the documentation for iap configuration.
 if [ "$USE_CLOUD_SHELL_HAL_CONFIG" = true -a -n "$IP_ADDR" ]; then
   ~/spinnaker-for-gcp/scripts/expose/launch_configure_iap.sh
+else
+  cat ~/spinnaker-for-gcp/scripts/expose/ | envsubst
+  echo "Instructions have been printed above - executing IAP install script:"
+  ~/spinnaker-for-gcp/scripts/expose/configure_iap.sh
+
 fi
 
 echo
