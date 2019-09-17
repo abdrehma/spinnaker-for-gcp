@@ -28,7 +28,7 @@ if [ $CURRENT_CONTEXT_PROJECT != $PROJECT_ID ]; then
   exit 1
 fi
 
-if [ $CURRENT_CONTEXT_ZONE != $ZONE ]; then
+if [ $CURRENT_CONTEXT_ZONE != $REGION ]; then
   bold "Your Spinnaker config references zone $ZONE, but you are connected to a cluster in zone $CURRENT_CONTEXT_ZONE."
   bold "Use 'kubectl config use-context' to connect to the correct cluster before pushing the config."
   exit 1
