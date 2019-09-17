@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+gsutil ls ${CONFIG_BUCKET_BACKUP_URI}/hal
+if [ "$?" = "0" ]; then
+  echo "Skipping hal push - hal folder already exists at ${CONFIG_BUCKET_BACKUP_URI}/hal"
+  exit 0
+fi
+
 bold() {
   echo ". $(tput bold)" "$*" "$(tput sgr0)"
 }
